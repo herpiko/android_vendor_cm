@@ -72,18 +72,34 @@ def add_auth(githubreq):
         githubreq.add_header("Authorization","Basic %s" % githubauth)
 
 if not depsonly:
+    # Fetch from Ridon repositories first
+    githubreq = urllib.request.Request("https://api.github.com/search/repositories?q=%s+user:ridon+in:name+fork:true" % device)
+    add_auth(githubreq)
+    try:
+        result = json.loads(urllib.request.urlopen(githubreq).read().decode())
+    except urllib.error.URLError:
+        print("Failed to search GitHub/ridon")
+        sys.exit()
+    except ValueError:
+        print("Failed to parse return data from GitHub/ridon")
+        sys.exit()
+    for res in result.get('items', []):
+        repositories.append(res)
+    
+    # Then lookup for LineageOS
     githubreq = urllib.request.Request("https://api.github.com/search/repositories?q=%s+user:LineageOS+in:name+fork:true" % device)
     add_auth(githubreq)
     try:
         result = json.loads(urllib.request.urlopen(githubreq).read().decode())
     except urllib.error.URLError:
-        print("Failed to search GitHub")
+        print("Failed to search GitHub/LineageOS")
         sys.exit()
     except ValueError:
-        print("Failed to parse return data from GitHub")
+        print("Failed to parse return data from GitHub/LineageOS")
         sys.exit()
     for res in result.get('items', []):
         repositories.append(res)
+
 
 local_manifests = r'.repo/local_manifests'
 if not os.path.exists(local_manifests): os.makedirs(local_manifests)
